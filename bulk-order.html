@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bulk Stock Orders</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <style>
+        body {
+          background: #f0f2f5;
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .container {
+          max-width: 1200px;
+          margin-top: 40px;
+        }
+
+        h2 {
+          font-weight: 700;
+          text-align: center;
+          margin-bottom: 30px;
+          color: #343a40;
+        }
+
+        .order-form {
+          background: #ffffff;
+          padding: 30px;
+          border-radius: 12px;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .order-card {
+          background: #f8f9fa;
+          padding: 20px;
+          border-radius: 10px;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+          margin-bottom: 20px;
+        }
+
+        .form-control {
+          border-radius: 6px;
+        }
+
+        .order-row {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 15px;
+        }
+
+        .order-row .form-group {
+          flex: 1 1 18%;
+        }
+
+        .btn-section {
+          display: flex;
+          justify-content: space-between;
+          margin-top: 20px;
+        }
+
+        .order-summary {
+          background: #ffffff;
+          padding: 20px;
+          border-radius: 10px;
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+          margin-top: 30px;
+        }
+
+        .order-summary h5 {
+          font-weight: bold;
+          margin-bottom: 15px;
+        }
+
+        .summary-line {
+          font-size: 1rem;
+          margin-bottom: 8px;
+        }
+    </style>
+</head>
+
+<body>
+<div class="container">
+    <h2>Bulk Stock Order Form</h2>
+    <form id="orderForm" class="order-form">
+        <div id="orders">
+            <div class="order-card order-row">
+                <div class="form-group">
+                    <label>Order ID</label>
+                    <input type="text" name="orderId" class="form-control" required />
+                </div>
+                <div class="form-group">
+                    <label>Stock Symbol</label>
+                    <input type="text" name="stockSymbol" class="form-control" required />
+                </div>
+                <div class="form-group">
+                    <label>Order Type</label>
+                    <select name="orderType" class="form-control" required>
+                        <option value="BUY">BUY</option>
+                        <option value="SELL">SELL</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Price</label>
+                    <input type="number" name="price" class="form-control" required />
+                </div>
+                <div class="form-group">
+                    <label>Quantity</label>
+                    <input type="number" name="quantity" class="form-control" required />
+                </div>
+            </div>
+        </div>
+        <div class="btn-section">
+            <button type="button" class="btn btn-info" onclick="addOrder()">Add Another Order</button>
+            <button type="submit" class="btn btn-primary">Submit Orders</button>
+        </div>
+    </form>
+
+    <div class="order-summary">
+        <h5>Order Summary</h5>
+        <div id="result">
+            <p class="summary-line">📭 No orders submitted yet.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    function addOrder() {
+      const orders = document.getElementById("orders");
+      const newCard = document.createElement("div");
+      newCard.className = "order-card order-row";
+      newCard.innerHTML = `
+        <div class="form-group">
+          <label>Order ID</label>
+          <input type="text" name="orderId" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label>Stock Symbol</label>
+          <input type="text" name="stockSymbol" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label>Order Type</label>
+          <select name="orderType" class="form-control" required>
+            <option value="BUY">BUY</option>
+            <option value="SELL">SELL</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Price</label>
+          <input type="number" name="price" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label>Quantity</label>
+          <input type="number" name="quantity" class="form-control" required>
+        </div>`;
+      orders.appendChild(newCard);
+    }
+
+    document.getElementById("orderForm").onsubmit = function (event) {
+      event.preventDefault();
+      const orderElements = document.querySelectorAll(".order-card");
+      const orders = Array.from(orderElements).map(card => {
+        const order = {};
+        card.querySelectorAll("input, select").forEach(input => {
+          order[input.name] = input.value;
+        });
+        return order;
+      });
+
+      fetch("http://localhost:8080/api/stock/bulk-order", {
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orders)
+      })
+        .then(response => response.json())
+        .then(data => {
+          const resultDiv = document.getElementById("result");
+          resultDiv.innerHTML = `
+            <p class="summary-line">✅ <strong>Total Orders:</strong> ${data.totalOrders}</p>
+            <p class="summary-line">🎯 <strong>Successful Orders:</strong> ${data.successCount}</p>
+            <p class="summary-line">💰 <strong>Total Amount:</strong> ₹${data.totalAmount.toLocaleString()}</p>
+          `;
+        })
+        .catch(error => {
+          document.getElementById("result").innerHTML = `<p class="summary-line text-danger">❌ Error: ${error}</p>`;
+        });
+    };
+</script>
+</body>
+
+</html>
